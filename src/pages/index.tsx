@@ -1,3 +1,4 @@
+import { Rekognition } from 'aws-sdk';
 import type { NextPage } from 'next';
 import { useCallback, useRef, useState } from 'react';
 import Webcam from 'react-webcam';
@@ -5,7 +6,10 @@ import { trpc } from '../utils/trpc';
 
 const Home: NextPage = () => {
   const webcamRef = useRef<Webcam>(null);
-  const [bestMatchImage, setBestMatchImage] = useState<string>('');
+  const [bestMatchImages, setBestMatchImages] = useState<
+    (string | undefined)[]
+  >([]);
+  const [matchResult, setMatchResult] = useState<Rekognition.FaceMatchList>();
   const hello = trpc.useQuery(['hello', { text: 'client' }]);
   const indexFace = trpc.useMutation('indexFace');
   const searchFaceByImage = trpc.useMutation('searchFaceByImage');
@@ -23,14 +27,8 @@ const Home: NextPage = () => {
         {
           onSuccess(data) {
             console.log(data);
-            // convers s3 image to base64
-            if (data?.image) {
-              const base64 =
-                'data:image/jpeg;base64,' +
-                Buffer.from(data.image as Buffer).toString('base64');
-              console.log(JSON.stringify(base64));
-              setBestMatchImage(base64);
-            }
+            setMatchResult(data.matchedFaces);
+            setBestMatchImages(data.images ?? []);
           },
         }
       );
@@ -40,12 +38,57 @@ const Home: NextPage = () => {
     return <div>Loading...</div>;
   }
   return (
-    <div>
-      <Webcam ref={webcamRef} screenshotFormat="image/jpeg" />
-      <button onClick={handleIndexFace}>Index Face</button>
-      <button onClick={handleSearchFace}>Search Face</button>
-      <div>{hello.data.greeting}</div>
-      <img src={bestMatchImage} />
+    <div className="p-4">
+      <div className="flex justify-center">
+        <div>
+          <Webcam
+            ref={webcamRef}
+            screenshotFormat="image/jpeg"
+            className="rounded-xl"
+          />
+          <div className="mb-2" />
+          <div className="text-center">
+            {/* styled tailwind button */}
+            <button
+              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+              onClick={handleIndexFace}
+            >
+              Index Face
+            </button>
+            <div className="mr-2 inline" />
+            <button
+              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+              onClick={handleSearchFace}
+            >
+              Search Face
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {bestMatchImages.length > 0 &&
+        bestMatchImages.map((image, index) => (
+          <div key={index} className="flex justify-center items-center mt-6">
+            <div>
+              <img
+                className="w-64 h-64 object-cover rounded-md"
+                src={'data:image/jpeg;base64,' + image}
+                alt="best match"
+              />
+            </div>
+            <div className="mr-4" />
+            <div>
+              {matchResult && (
+                <div>
+                  <div>Similarity</div>
+                  <div className="text-4xl">
+                    {matchResult[index]?.Similarity?.toFixed(6)}%
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
     </div>
   );
 };

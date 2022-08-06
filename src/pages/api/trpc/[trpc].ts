@@ -80,16 +80,22 @@ export const appRouter = trpc
           },
         })
         .promise();
-      console.log(res);
-      const imageId = res.FaceMatches?.[0].Face?.ExternalImageId;
-      // Get image from s3 bucket
-      const s3Res = await s3
-        .getObject({
-          Bucket: 'find-my-tween',
-          Key: 'faces/' + imageId + '.jpg',
-        })
-        .promise();
-      return { matchedFaces: res.FaceMatches, image: s3Res.Body };
+
+      const images = [];
+      // loop faces
+      for (const face of res.FaceMatches ?? []) {
+        // get the image from s3
+        const s3Res = await s3
+          .getObject({
+            Bucket: 'find-my-tween',
+            Key: 'faces/' + face.Face?.ExternalImageId + '.jpg',
+          })
+          .promise();
+        // convert to base64
+        const base64 = s3Res.Body?.toString('base64');
+        images.push(base64);
+      }
+      return { matchedFaces: res.FaceMatches, images };
     },
   });
 
