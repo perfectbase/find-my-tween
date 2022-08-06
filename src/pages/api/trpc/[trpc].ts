@@ -1,10 +1,20 @@
 import * as trpc from '@trpc/server';
 import * as trpcNext from '@trpc/server/adapters/next';
 import { z } from 'zod';
+import * as AWS from 'aws-sdk';
 import Rekognition from 'aws-sdk/clients/rekognition';
 import S3 from 'aws-sdk/clients/s3';
 import { TRPCError } from '@trpc/server';
 import { uuid } from '../../../utils/uuid';
+
+// configure aws global credentials
+if (process.env.PB_ACCESS_KEY_ID) {
+  AWS.config.update({
+    accessKeyId: process.env.PB_ACCESS_KEY_ID,
+    secretAccessKey: process.env.PB_SECRET_ACCESS_KEY,
+    region: process.env.PB_REGION,
+  });
+}
 
 const rekog = new Rekognition();
 const s3 = new S3();
