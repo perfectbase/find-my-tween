@@ -1,4 +1,4 @@
-import '../styles/globals.css'
+import '../styles/globals.css';
 import { AppType } from 'next/dist/shared/lib/utils';
 import { AppRouter } from './api/trpc/[trpc]';
 import { withTRPC } from '@trpc/next';
